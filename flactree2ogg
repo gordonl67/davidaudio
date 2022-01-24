@@ -7,9 +7,11 @@
 # Usage: flactree2ogg dirname
 
 ### Output directory for encoded files
+# TODO: make this an option with getopt
 TARGET=/tmp/ogg
 
 ### Number of concurrent encoding processes
+# TODO: make this an option with getopt
 THREADS=4
 
 
@@ -49,6 +51,7 @@ find "$1" -type d | while read d ; do
 
 # Use make to convert the files to ogg, removing
 # the symbolic links as we go.
+# TODO: get rid of the absolute path in the .make file.
 
 	printf "*** Encoding\n"
 	make -C "$TARGET/$encodedir" -j$THREADS -f $HOME/bin/flactree2ogg.make
