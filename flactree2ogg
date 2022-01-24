@@ -1,0 +1,58 @@
+#!/bin/bash
+
+#
+# Encode lots of music files into /tmp/ogg
+# Recursively descends subdirectories
+# 
+# Usage: flactree2ogg dirname
+
+### Output directory for encoded files
+TARGET=/tmp/ogg
+
+### Number of concurrent encoding processes
+THREADS=4
+
+
+# Look up terminal control sequences
+#ceol="\r$(tput el)"
+
+sanitise_path () {
+	printf "$1" | sed -e 's/:/_--_/g' -e 's/[ \*"<>|;]/_/g'
+}
+
+# Build directory tree
+
+printf "*** Creating Directories:\n"
+find "$1" -type d | while read d ; do
+	mkdir -p "$TARGET/$(sanitise_path "$d")"
+        printf "    $d\n"
+done
+
+# Process files directory by directory using make
+
+printf "\n\n*** Linking source files:\n"
+find "$1" -type d | while read d ; do
+	printf "    $d...\n"
+	encodedir=$(sanitise_path "$d")
+
+# Create symbolic links to the files,
+# replacing spaces in the filenames with underscores
+
+	cd "$d"
+	find . -maxdepth 1 -type f -name \*.flac | while read f; do
+		target="$(sanitise_path "${f#./}")"
+		#target=`printf "${f#./}" | sed -e 's/[ \/:*"<>|]/_/g'`
+		# Don't attempt to re-make the link
+		[ -h "$TARGET/$encodedir/$target" ] || ln -s "$PWD/$f" "$TARGET/$encodedir/$target"
+	done
+	cd - > /dev/null
+
+# Use make to convert the files to ogg, removing
+# the symbolic links as we go.
+
+	printf "*** Encoding\n"
+	make -C "$TARGET/$encodedir" -j$THREADS -f $HOME/bin/flactree2ogg.make
+	rm -f "$TARGET/$encodedir"/*.flac
+	printf "*** Done.\n"
+done
+
